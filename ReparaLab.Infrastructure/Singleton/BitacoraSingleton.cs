@@ -1,12 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace ReparaLab.Infrastructure.Singleton;
 
-namespace ReparaLab.Infrastructure.Singleton
+using ReparaLab.Application.Interfaces;
+
+public sealed class BitacoraSingleton : IBitacoraService
 {
-    internal class BitacoraSingleton
+    private static readonly BitacoraSingleton _instancia = new();
+    private readonly List<string> _eventos = new();
+    private readonly object _lock = new();
+
+    // Constructor privado para impedir instanciación externa
+    private BitacoraSingleton() { }
+
+    public static BitacoraSingleton Instancia => _instancia;
+
+    public void RegistrarEvento(string evento)
     {
+        lock (_lock)
+        {
+            string registro = $"{DateTime.Now:HH:mm:ss} | {evento}";
+            _eventos.Add(registro);
+        }
+    }
+
+    public IEnumerable<string> ObtenerEventos()
+    {
+        lock (_lock)
+        {
+            return _eventos.ToList();
+        }
     }
 }
