@@ -1,16 +1,38 @@
 namespace ReparaLab.WinForms;
 
-static class Program
+using Microsoft.Extensions.DependencyInjection;
+using ReparaLab.Application.Interfaces;
+using ReparaLab.Application.UseCases;
+using ReparaLab.Infrastructure.Repositories;
+using ReparaLab.Infrastructure.Singleton;
+
+internal static class Program
 {
-    /// <summary>
-    ///  The main entry point for the application.
-    /// </summary>
     [STAThread]
     static void Main()
     {
-        // To customize application configuration such as set high DPI settings or default font,
-        // see https://aka.ms/applicationconfiguration.
         ApplicationConfiguration.Initialize();
-        Application.Run(new Form1());
-    }    
+
+        var services = new ServiceCollection();
+        ConfigureServices(services);
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var mainForm = serviceProvider.GetRequiredService<FrmReparaciones>();
+        Application.Run(mainForm);
+    }
+
+    private static void ConfigureServices(IServiceCollection services)
+    {
+        // Infraestructura (Singleton para mantener vivos los datos durante la sesión)
+        services.AddSingleton<IOrdenRepository, OrdenMemoryRepository>();
+        services.AddSingleton<IBitacoraService>(BitacoraSingleton.Instancia);
+
+        // Casos de Uso
+        services.AddTransient<RegistrarOrdenUseCase>();
+        services.AddTransient<ListarOrdenesUseCase>();
+        services.AddTransient<CambiarEstadoOrdenUseCase>();
+
+        // Formulario Principal
+        services.AddTransient<FrmReparaciones>();
+    }
 }
