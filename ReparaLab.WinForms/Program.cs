@@ -18,12 +18,12 @@ internal static class Program
 
         using var serviceProvider = services.BuildServiceProvider();
         var mainForm = serviceProvider.GetRequiredService<FrmReparaciones>();
-        Application.Run(mainForm);
+        System.Windows.Forms.Application.Run(mainForm);
     }
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        // Infraestructura (Singleton para mantener vivos los datos durante la sesión)
+        // Infraestructura (Singleton para mantener vivos los datos durante la sesiï¿½n)
         services.AddSingleton<IOrdenRepository, OrdenMemoryRepository>();
         services.AddSingleton<IBitacoraService>(BitacoraSingleton.Instancia);
 
