@@ -1,12 +1,14 @@
 namespace ReparaLab.Tests;
 
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.DependencyInjection;
 using ReparaLab.Application.DTOs;
 using ReparaLab.Application.FactoryMethod;
 using ReparaLab.Application.UseCases;
 using ReparaLab.Domain;
 using ReparaLab.Domain.AbstractFactory;
 using ReparaLab.Domain.Prototype;
+using ReparaLab.Domain.Repositories;
 using ReparaLab.Infrastructure.Notificaciones;
 using ReparaLab.Infrastructure.Repositories;
 using ReparaLab.Infrastructure.Singleton;
@@ -28,6 +30,7 @@ public class PruebasReparaLab
     {
         var repo = new OrdenMemoryRepository();
         var bitacora = BitacoraSingleton.Instancia;
+        int eventosPrevios = bitacora.ObtenerEventos().Count();
         var useCase = CrearRegistrarUseCase(repo, bitacora);
 
         var dto = new CrearOrdenDto("Ana", "LAPTOP", "No enciende", "DIAGNOSTICO", "BASICO", "EMAIL", false, new List<string>());
@@ -36,7 +39,8 @@ public class PruebasReparaLab
         Assert.Equal(20.00m, resultado.Total);
         Assert.Equal(30, resultado.GarantiaDias);
         Assert.Equal("PENDIENTE", resultado.Estado);
-        Assert.Contains(bitacora.ObtenerEventos(), e => e.Contains("EMAIL simulado") && e.Contains($"orden {resultado.Id}"));
+        var eventosNuevos = bitacora.ObtenerEventos().Skip(eventosPrevios);
+        Assert.Contains(eventosNuevos, e => e.Contains("EMAIL simulado") && e.Contains($"orden {resultado.Id}"));
     }
 
     [Fact]
@@ -44,6 +48,7 @@ public class PruebasReparaLab
     {
         var repo = new OrdenMemoryRepository();
         var bitacora = BitacoraSingleton.Instancia;
+        int eventosPrevios = bitacora.ObtenerEventos().Count();
         var useCase = CrearRegistrarUseCase(repo, bitacora);
 
         var dto = new CrearOrdenDto("Luis", "CELULAR", "No carga", "MANTENIMIENTO", "PREMIUM", "SMS", true, new List<string>());
@@ -52,7 +57,8 @@ public class PruebasReparaLab
         Assert.Equal(58.75m, resultado.Total);
         Assert.Equal(90, resultado.GarantiaDias);
         Assert.Equal("PENDIENTE", resultado.Estado);
-        Assert.Contains(bitacora.ObtenerEventos(), e => e.Contains("SMS simulado") && e.Contains($"orden {resultado.Id}"));
+        var eventosNuevos = bitacora.ObtenerEventos().Skip(eventosPrevios);
+        Assert.Contains(eventosNuevos, e => e.Contains("SMS simulado") && e.Contains($"orden {resultado.Id}"));
     }
 
     [Fact]
@@ -103,11 +109,13 @@ public class PruebasReparaLab
         var cambiarEstado = new CambiarEstadoOrdenUseCase(repo, repo, bitacora);
 
         var resultado = registrar.Ejecutar(new CrearOrdenDto("Ana", "LAPTOP", "Falla", "DIAGNOSTICO", "BASICO", "EMAIL", false, new List<string>()));
+        int eventosPrevios = bitacora.ObtenerEventos().Count();
         cambiarEstado.Ejecutar(resultado.Id, "FINALIZADA");
 
         var orden = repo.ObtenerPorId(resultado.Id);
         Assert.Equal("FINALIZADA", orden!.Estado);
-        Assert.Contains(bitacora.ObtenerEventos(), e => e.Contains($"Orden {resultado.Id} -> FINALIZADA"));
+        var eventosNuevos = bitacora.ObtenerEventos().Skip(eventosPrevios);
+        Assert.Contains(eventosNuevos, e => e.Contains($"Orden {resultado.Id} -> FINALIZADA"));
     }
 
     [Fact]
@@ -119,11 +127,13 @@ public class PruebasReparaLab
         var cambiarEstado = new CambiarEstadoOrdenUseCase(repo, repo, bitacora);
 
         var resultado = registrar.Ejecutar(new CrearOrdenDto("Ana", "LAPTOP", "Falla", "DIAGNOSTICO", "BASICO", "EMAIL", false, new List<string>()));
+        int eventosPrevios = bitacora.ObtenerEventos().Count();
         cambiarEstado.Ejecutar(resultado.Id, "CANCELADA");
 
         var orden = repo.ObtenerPorId(resultado.Id);
         Assert.Equal("CANCELADA", orden!.Estado);
-        Assert.Contains(bitacora.ObtenerEventos(), e => e.Contains($"Orden {resultado.Id} -> CANCELADA"));
+        var eventosNuevos = bitacora.ObtenerEventos().Skip(eventosPrevios);
+        Assert.Contains(eventosNuevos, e => e.Contains($"Orden {resultado.Id} -> CANCELADA"));
     }
 
     [Fact]
@@ -191,6 +201,18 @@ public class PruebasReparaLab
         var copia2 = obtenerPlantilla.Ejecutar("DIAGNOSTICO");
 
         Assert.DoesNotContain("Tarea que no debe llegar a la plantilla original", copia2.Tareas);
+    }
+
+    [Fact]
+    public void Prueba11b_ConstructorPlantilla_CopiaProfunda_NoAliasaListaDelLlamador()
+    {
+        var listaOriginal = new List<string> { "Tarea inicial" };
+        var plantilla = new PlantillaReparacion("DIAGNOSTICO", listaOriginal);
+
+        listaOriginal.Add("Tarea agregada despues de construir la plantilla");
+
+        Assert.Single(plantilla.Tareas);
+        Assert.DoesNotContain("Tarea agregada despues de construir la plantilla", plantilla.Tareas);
     }
 
     [Fact]
@@ -270,5 +292,33 @@ public class PruebasReparaLab
         var orden = repo.ObtenerPorId(resultado.Id);
         Assert.Equal("PENDIENTE", orden!.Estado);
         Assert.Equal(antes, bitacora.ObtenerEventos().Count());
+    }
+
+    [Fact]
+    public void Prueba17_DI_RepositorioYBitacora_ResuelvenLaMismaInstanciaPorAmbasInterfaces()
+    {
+        // Reproduce el registro real de ReparaLab.WinForms/Program.cs para probar,
+        // a traves de un contenedor de DI real, que IOrdenLecturaRepository e
+        // IOrdenEscrituraRepository devuelven la MISMA instancia (el requisito de
+        // CQRS "una sola clase, un solo singleton, expuesta por dos interfaces").
+        var services = new ServiceCollection();
+        services.AddSingleton<OrdenMemoryRepository>();
+        services.AddSingleton<IOrdenLecturaRepository>(sp => sp.GetRequiredService<OrdenMemoryRepository>());
+        services.AddSingleton<IOrdenEscrituraRepository>(sp => sp.GetRequiredService<OrdenMemoryRepository>());
+        services.AddSingleton<IBitacoraService>(BitacoraSingleton.Instancia);
+
+        using var proveedor = services.BuildServiceProvider();
+
+        var lectura = proveedor.GetRequiredService<IOrdenLecturaRepository>();
+        var escritura = proveedor.GetRequiredService<IOrdenEscrituraRepository>();
+        var concreto = proveedor.GetRequiredService<OrdenMemoryRepository>();
+
+        Assert.True(ReferenceEquals(lectura, escritura));
+        Assert.True(ReferenceEquals(lectura, concreto));
+
+        var bitacoraA = proveedor.GetRequiredService<IBitacoraService>();
+        var bitacoraB = proveedor.GetRequiredService<IBitacoraService>();
+        Assert.True(ReferenceEquals(bitacoraA, bitacoraB));
+        Assert.True(ReferenceEquals(bitacoraA, BitacoraSingleton.Instancia));
     }
 }
