@@ -2,16 +2,19 @@ namespace ReparaLab.Domain;
 
 public class OrdenReparacion
 {
-    public int Id { get; set; }
-    public string Cliente { get; set; } = string.Empty;
-    public string Equipo { get; set; } = string.Empty;
-    public string Falla { get; set; } = string.Empty;
-    public string Servicio { get; set; } = string.Empty;
-    public string Plan { get; set; } = string.Empty;
-    public string Notificacion { get; set; } = string.Empty;
-    public bool Repuesto { get; set; }
-    public decimal Total { get; set; }
-    public int GarantiaDias { get; set; }
+    internal OrdenReparacion() { }
+
+    public int Id { get; internal set; }
+    public string Cliente { get; internal set; } = string.Empty;
+    public string Equipo { get; internal set; } = string.Empty;
+    public string Falla { get; internal set; } = string.Empty;
+    public string Servicio { get; internal set; } = string.Empty;
+    public string Plan { get; internal set; } = string.Empty;
+    public string Notificacion { get; internal set; } = string.Empty;
+    public bool Repuesto { get; internal set; }
+    public decimal Total { get; internal set; }
+    public int GarantiaDias { get; internal set; }
+    public IReadOnlyList<string> Tareas { get; internal set; } = Array.Empty<string>();
     public string Estado { get; private set; } = "PENDIENTE";
 
     public void Finalizar()
