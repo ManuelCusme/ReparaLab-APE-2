@@ -7,5 +7,6 @@ public record CrearOrdenDto(
     string Servicio,
     string Plan,
     string Notificacion,
-    bool Repuesto
+    bool Repuesto,
+    List<string> Tareas
 );
