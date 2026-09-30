@@ -1,25 +1,83 @@
-# ReparaLab.Base — proyecto inicial para el APE 02
-JV
+# ReparaLab
+
+Aplicacion de escritorio para gestionar ordenes de reparacion usando C# y .NET 8 Windows Forms. El trabajo refactoriza el proyecto inicial `ReparaLab.Base` aplicando Clean Architecture, SOLID y cinco patrones creacionales.
+
+## Proyectos
+
+- `ReparaLab.Domain`: entidad, reglas de estado, contratos, Builder, Abstract Factory y Prototype.
+- `ReparaLab.Application`: DTOs, casos de uso y coordinacion de los flujos.
+- `ReparaLab.Infrastructure`: repositorio en memoria, notificaciones simuladas y bitacora Singleton.
+- `ReparaLab.WinForms`: interfaz grafica y composition root con inyeccion de dependencias.
+- `ReparaLab.Tests`: pruebas automatizadas de la solucion.
+- `ReparaLab.Base`: proyecto inicial utilizado como referencia del ANTES.
+
+## Funcionalidad
+
+- Registro y listado de ordenes.
+- Equipos: LAPTOP, CELULAR y TABLET.
+- Servicios: DIAGNOSTICO ($20) y MANTENIMIENTO ($35).
+- Plan BASICO: tarifa base y garantia de 30 dias.
+- Plan PREMIUM: 25% adicional sobre el servicio y garantia de 90 dias.
+- Repuesto opcional de $15 despues de aplicar el plan.
+- Notificaciones EMAIL y SMS simuladas.
+- Estados PENDIENTE, FINALIZADA y CANCELADA.
+- Solo se permiten transiciones desde PENDIENTE.
+- Plantillas clonables para DIAGNOSTICO y MANTENIMIENTO.
+- Datos almacenados exclusivamente en memoria durante la sesion.
+
+## Patrones aplicados
+
+- **Factory Method**: crea notificadores EMAIL y SMS mediante fabricas concretas.
+- **Abstract Factory**: crea familias coherentes de politicas de tarifa y garantia para BASICO y PREMIUM.
+- **Builder**: construye `OrdenReparacion` paso a paso mediante una fabrica inyectada.
+- **Prototype**: clona plantillas con copia independiente de la lista de tareas.
+- **Singleton**: mantiene una bitacora compartida durante la ejecucion.
+
+## Arquitectura y flujo
+
+```text
+WinForms -> Application -> Domain
+    |             |
+    +--------> Infrastructure
+```
+
+Flujo de registro:
+
+```text
+FrmReparaciones
+  -> RegistrarOrdenUseCase
+  -> Abstract Factory
+  -> Builder
+  -> IOrdenEscrituraRepository
+  -> Factory Method
+  -> IBitacoraService
+  -> resultado visual
+```
+
+La lectura y escritura del repositorio se separan mediante `IOrdenLecturaRepository` e `IOrdenEscrituraRepository`. Ambas interfaces usan la misma instancia Singleton de `OrdenMemoryRepository` durante la sesion.
 
 ## Requisitos
-- Windows 10/11 y Visual Studio 2022 con la carga de trabajo «Desarrollo de escritorio con .NET» y SDK de .NET 8.
-- También se puede iniciar desde una terminal de Windows con el SDK instalado.
 
-## Cómo ejecutar el proyecto inicial
-1. Descomprimir el ZIP.
-2. Abrir `ReparaLab.Base.csproj` en Visual Studio.
-3. Ejecutar con F5 o Ctrl+F5. Alternativamente, abrir una terminal en la carpeta del proyecto y ejecutar `dotnet run`.
-4. El formulario se construye mediante código C# en `FrmReparaciones.cs`; por eso se visualiza al **ejecutar** la aplicación y no depende de un archivo `.Designer.cs`.
+- Windows 10/11.
+- SDK de .NET 8.
+- Windows Forms.
 
-## Funciones iniciales
-- Registrar y listar órdenes de LAPTOP, CELULAR o TABLET.
-- Seleccionar DIAGNOSTICO ($20) o MANTENIMIENTO ($35).
-- Plan BASICO: tarifa original y garantía de 30 días.
-- Plan PREMIUM: recargo de 25 % sobre el servicio y garantía de 90 días.
-- Repuesto opcional: $15 añadidos después del recargo del plan.
-- Notificación EMAIL o SMS **simulada** en el panel de eventos.
-- Estado inicial PENDIENTE; una orden pendiente puede finalizarse o cancelarse. No se permiten nuevos cambios desde estados finales.
-- Ejemplos: Ana / DIAGNOSTICO / BASICO / sin repuesto = $20.00; Luis / MANTENIMIENTO / PREMIUM / con repuesto = $58.75.
+No se utiliza base de datos, Entity Framework, API REST, archivos para persistir ordenes ni envio real de mensajes. Los datos se pierden al cerrar la aplicacion.
 
+## Ejecucion
 
-No se utiliza base de datos, Entity Framework, API REST, archivos para persistir órdenes ni envío real de mensajes. Los registros se pierden al cerrar la aplicación.
+Desde la raiz del repositorio:
+
+```powershell
+dotnet restore
+dotnet build ReparaLab.sln
+dotnet run --project ReparaLab.WinForms/ReparaLab.WinForms.csproj
+```
+
+## Pruebas
+
+```powershell
+dotnet test ReparaLab.sln
+```
+
+Las pruebas cubren registro, calculos, validaciones, listado, transiciones de estado, Prototype, Singleton, DI y referencias entre capas.
