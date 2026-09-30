@@ -41,6 +41,8 @@ public class RegistrarOrdenUseCase
             throw new ArgumentException("Plan inválido. Use BASICO o PREMIUM.");
         if (dto.Notificacion is not ("EMAIL" or "SMS"))
             throw new ArgumentException("Aviso inválido. Use EMAIL o SMS.");
+        if (!string.IsNullOrEmpty(dto.PlantillaCargada) && dto.PlantillaCargada != dto.Servicio)
+            throw new ArgumentException("La plantilla cargada no corresponde al servicio seleccionado.");
 
         // 1. Abstract Factory - seleccion de plan mediante selector inyectado
         IPlanFactory planFactory = _planFactorySelector.ObtenerFactory(dto.Plan);
@@ -72,7 +74,11 @@ public class RegistrarOrdenUseCase
             $"Orden {orden.Id} guardada. Total ${orden.Total:0.00}. Garantía {orden.GarantiaDias} días.");
 
         if (orden.Tareas.Count > 0)
-            _bitacora.RegistrarEvento($"Orden {orden.Id} usa una plantilla clonada con {orden.Tareas.Count} tarea(s).");
+        {
+            _bitacora.RegistrarEvento($"Orden {orden.Id} usa una plantilla clonada con {orden.Tareas.Count} tarea(s):");
+            for (int i = 0; i < orden.Tareas.Count; i++)
+                _bitacora.RegistrarEvento($"  Tarea {i + 1}: {orden.Tareas[i]}");
+        }
 
         return new OrdenDto(
             orden.Id, orden.Cliente, orden.Equipo, orden.Servicio,

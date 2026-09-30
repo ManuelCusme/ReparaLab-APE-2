@@ -22,6 +22,7 @@ public class FrmReparaciones : Form
     private readonly CheckBox chkRepuesto = new();
     private readonly ComboBox cmbPlantilla = new();
     private readonly TextBox txtTareasPlantilla = new();
+    private string? _plantillaCargada;
     private readonly DataGridView tabla = new();
     private readonly TextBox txtEventos = new();
 
@@ -140,7 +141,8 @@ public class FrmReparaciones : Form
                 cmbPlan.Text,
                 cmbNotificacion.Text,
                 chkRepuesto.Checked,
-                tareas
+                tareas,
+                _plantillaCargada
             );
 
             int eventosPrevios = _bitacora.ObtenerEventos().Count();
@@ -186,6 +188,7 @@ public class FrmReparaciones : Form
         if (cmbPlantilla.SelectedIndex <= 0)
         {
             txtTareasPlantilla.Clear();
+            _plantillaCargada = null;
             return;
         }
 
@@ -194,6 +197,7 @@ public class FrmReparaciones : Form
             var plantilla = _obtenerPlantillaUseCase.Ejecutar(cmbPlantilla.Text);
             cmbServicio.Text = plantilla.Servicio;
             txtTareasPlantilla.Text = string.Join("; ", plantilla.Tareas);
+            _plantillaCargada = plantilla.Servicio;
         }
         catch (Exception ex)
         {
@@ -227,6 +231,7 @@ public class FrmReparaciones : Form
         chkRepuesto.Checked = false;
         cmbPlantilla.SelectedIndex = 0;
         txtTareasPlantilla.Clear();
+        _plantillaCargada = null;
         txtCliente.Focus();
     }
 }

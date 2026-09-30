@@ -14,8 +14,7 @@ public class ObtenerPlantillaUseCase
         if (servicio is not ("DIAGNOSTICO" or "MANTENIMIENTO"))
             throw new ArgumentException("Plantilla inválida. Use DIAGNOSTICO o MANTENIMIENTO.");
 
-        var original = _catalogo.Obtener(servicio);
-        var copia = (PlantillaReparacion)original.Clonar();
+        var copia = _catalogo.Obtener(servicio);
         return new PlantillaDto(copia.NombreServicio, copia.Tareas);
     }
 }

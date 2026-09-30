@@ -27,6 +27,6 @@ public class CatalogoPlantillas
     {
         if (!_plantillas.TryGetValue(servicio, out var plantilla))
             throw new ArgumentException("Plantilla inválida. Use DIAGNOSTICO o MANTENIMIENTO.");
-        return plantilla;
+        return (PlantillaReparacion)plantilla.Clonar();
     }
 }

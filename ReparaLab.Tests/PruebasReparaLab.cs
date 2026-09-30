@@ -321,4 +321,48 @@ public class PruebasReparaLab
         Assert.True(ReferenceEquals(bitacoraA, bitacoraB));
         Assert.True(ReferenceEquals(bitacoraA, BitacoraSingleton.Instancia));
     }
+
+    [Fact]
+    public void Prueba18_PlantillaCargadaDeOtroServicio_Rechazada()
+    {
+        var repo = new OrdenMemoryRepository();
+        var registrar = CrearRegistrarUseCase(repo, BitacoraSingleton.Instancia);
+        var dto = new CrearOrdenDto("Ana", "LAPTOP", "Falla", "MANTENIMIENTO", "BASICO", "EMAIL", false,
+            new List<string> { "Revisión de hardware" }, "DIAGNOSTICO");
+
+        var ex = Assert.Throws<ArgumentException>(() => registrar.Ejecutar(dto));
+
+        Assert.Equal("La plantilla cargada no corresponde al servicio seleccionado.", ex.Message);
+        Assert.Empty(repo.ObtenerTodas());
+    }
+
+    [Fact]
+    public void Prueba19_BitacoraListaLasTareasDeLaPlantilla()
+    {
+        var repo = new OrdenMemoryRepository();
+        var bitacora = BitacoraSingleton.Instancia;
+        var registrar = CrearRegistrarUseCase(repo, bitacora);
+        var plantilla = new ObtenerPlantillaUseCase(new CatalogoPlantillas()).Ejecutar("DIAGNOSTICO");
+        int eventosPrevios = bitacora.ObtenerEventos().Count();
+
+        registrar.Ejecutar(new CrearOrdenDto("Ana", "LAPTOP", "Falla", "DIAGNOSTICO", "BASICO", "EMAIL", false,
+            plantilla.Tareas, plantilla.Servicio));
+
+        var nuevos = bitacora.ObtenerEventos().Skip(eventosPrevios).ToList();
+        foreach (var tarea in plantilla.Tareas)
+            Assert.Contains(nuevos, e => e.Contains(tarea));
+    }
+
+    [Fact]
+    public void Prueba20_CatalogoNoExponeLaPlantillaOriginalModificable()
+    {
+        var catalogo = new CatalogoPlantillas();
+
+        catalogo.Obtener("DIAGNOSTICO").Tareas.Add("Intrusa");
+        catalogo.Obtener("DIAGNOSTICO").NombreServicio = "OTRO";
+
+        var otra = catalogo.Obtener("DIAGNOSTICO");
+        Assert.DoesNotContain("Intrusa", otra.Tareas);
+        Assert.Equal("DIAGNOSTICO", otra.NombreServicio);
+    }
 }

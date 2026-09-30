@@ -8,5 +8,6 @@ public record CrearOrdenDto(
     string Plan,
     string Notificacion,
     bool Repuesto,
-    List<string> Tareas
+    List<string> Tareas,
+    string? PlantillaCargada = null
 );
