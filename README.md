@@ -74,10 +74,3 @@ dotnet build ReparaLab.sln
 dotnet run --project ReparaLab.WinForms/ReparaLab.WinForms.csproj
 ```
 
-## Pruebas
-
-```powershell
-dotnet test ReparaLab.sln
-```
-
-Las pruebas cubren registro, calculos, validaciones, listado, transiciones de estado, Prototype, Singleton, DI y referencias entre capas.
