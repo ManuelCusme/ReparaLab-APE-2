@@ -2,5 +2,6 @@
   <Project Path="ReparaLab.Application/ReparaLab.Application.csproj" />
   <Project Path="ReparaLab.Domain/ReparaLab.Domain.csproj" />
   <Project Path="ReparaLab.Infrastructure/ReparaLab.Infrastructure.csproj" />
+  <Project Path="ReparaLab.Tests/ReparaLab.Tests.csproj" />
   <Project Path="ReparaLab.WinForms/ReparaLab.WinForms.csproj" />
 </Solution>
