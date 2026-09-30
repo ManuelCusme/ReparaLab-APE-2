@@ -1,17 +1,17 @@
 namespace ReparaLab.Application.UseCases;
 
 using ReparaLab.Application.DTOs;
-using ReparaLab.Application.Interfaces;
+using ReparaLab.Domain.Repositories;
 
 public class ListarOrdenesUseCase
 {
-    private readonly IOrdenRepository _repository;
+    private readonly IOrdenLecturaRepository _lectura;
 
-    public ListarOrdenesUseCase(IOrdenRepository repository) => _repository = repository;
+    public ListarOrdenesUseCase(IOrdenLecturaRepository lectura) => _lectura = lectura;
 
     public IEnumerable<OrdenDto> Ejecutar()
     {
-        return _repository.ObtenerTodas().Select(x => new OrdenDto(
+        return _lectura.ObtenerTodas().Select(x => new OrdenDto(
             x.Id, x.Cliente, x.Equipo, x.Servicio,
             x.Plan, x.Total, x.GarantiaDias, x.Estado
         ));

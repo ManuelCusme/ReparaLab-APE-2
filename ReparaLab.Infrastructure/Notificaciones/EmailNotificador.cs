@@ -1,4 +1,6 @@
-namespace ReparaLab.Application.FactoryMethod;
+namespace ReparaLab.Infrastructure.Notificaciones;
+
+using ReparaLab.Domain.Notificaciones;
 
 public class EmailNotificador : INotificador
 {

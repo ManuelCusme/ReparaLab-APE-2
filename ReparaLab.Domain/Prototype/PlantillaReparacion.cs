@@ -8,7 +8,7 @@ public class PlantillaReparacion : IPlantillaReparacion
     public PlantillaReparacion(string nombreServicio, List<string> tareas)
     {
         NombreServicio = nombreServicio;
-        Tareas = tareas;
+        Tareas = new List<string>(tareas);
     }
 
     // Copia profunda: instanciamos una nueva lista con los elementos existentes

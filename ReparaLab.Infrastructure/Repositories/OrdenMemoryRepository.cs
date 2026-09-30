@@ -1,9 +1,9 @@
-﻿namespace ReparaLab.Infrastructure.Repositories;
+namespace ReparaLab.Infrastructure.Repositories;
 
-using ReparaLab.Application.Interfaces;
 using ReparaLab.Domain;
+using ReparaLab.Domain.Repositories;
 
-public class OrdenMemoryRepository : IOrdenRepository
+public class OrdenMemoryRepository : IOrdenLecturaRepository, IOrdenEscrituraRepository
 {
     private readonly List<OrdenReparacion> _ordenes = new();
     private int _siguienteId = 1;
@@ -14,6 +14,16 @@ public class OrdenMemoryRepository : IOrdenRepository
         lock (_lock)
         {
             _ordenes.Add(orden);
+        }
+    }
+
+    public void Actualizar(OrdenReparacion orden)
+    {
+        lock (_lock)
+        {
+            int index = _ordenes.FindIndex(x => x.Id == orden.Id);
+            if (index >= 0)
+                _ordenes[index] = orden;
         }
     }
 

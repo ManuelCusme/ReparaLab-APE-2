@@ -2,15 +2,15 @@ namespace ReparaLab.WinForms;
 
 using System.Drawing;
 using ReparaLab.Application.DTOs;
-using ReparaLab.Application.Interfaces;
 using ReparaLab.Application.UseCases;
-using ReparaLab.Domain.Prototype;
+using ReparaLab.Domain;
 
 public class FrmReparaciones : Form
 {
     private readonly RegistrarOrdenUseCase _registrarUseCase;
     private readonly ListarOrdenesUseCase _listarUseCase;
     private readonly CambiarEstadoOrdenUseCase _cambiarEstadoUseCase;
+    private readonly ObtenerPlantillaUseCase _obtenerPlantillaUseCase;
     private readonly IBitacoraService _bitacora;
 
     private readonly TextBox txtCliente = new();
@@ -20,23 +20,26 @@ public class FrmReparaciones : Form
     private readonly ComboBox cmbPlan = new();
     private readonly ComboBox cmbNotificacion = new();
     private readonly CheckBox chkRepuesto = new();
+    private readonly ComboBox cmbPlantilla = new();
+    private readonly TextBox txtTareasPlantilla = new();
+    private string? _plantillaCargada;
     private readonly DataGridView tabla = new();
     private readonly TextBox txtEventos = new();
-
-    private PlantillaReparacion? _plantillaActual;
 
     public FrmReparaciones(
         RegistrarOrdenUseCase registrarUseCase,
         ListarOrdenesUseCase listarUseCase,
         CambiarEstadoOrdenUseCase cambiarEstadoUseCase,
+        ObtenerPlantillaUseCase obtenerPlantillaUseCase,
         IBitacoraService bitacora)
     {
         _registrarUseCase = registrarUseCase;
         _listarUseCase = listarUseCase;
         _cambiarEstadoUseCase = cambiarEstadoUseCase;
+        _obtenerPlantillaUseCase = obtenerPlantillaUseCase;
         _bitacora = bitacora;
 
-        Text = "ReparaLab - Clean Architecture & Design Patterns (APE 02)";
+        Text = "ReparaLab - Proyecto base APE 02";
         Width = 1040; Height = 740;
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(970, 690);
@@ -49,7 +52,7 @@ public class FrmReparaciones : Form
 
     private void ConstruirInterfaz()
     {
-        var titulo = new Label { Text = "ReparaLab | Órdenes de reparación refactorizadas", Left = 20, Top = 15, Width = 920, Height = 35, Font = new Font("Segoe UI", 16, FontStyle.Bold) };
+        var titulo = new Label { Text = "ReparaLab | Órdenes de reparación", Left = 20, Top = 15, Width = 920, Height = 35, Font = new Font("Segoe UI", 16, FontStyle.Bold) };
         Controls.Add(titulo);
 
         AgregarEtiqueta("Cliente", 20, 65);
@@ -76,19 +79,29 @@ public class FrmReparaciones : Form
         chkRepuesto.SetBounds(20, 212, 300, 30);
         Controls.Add(chkRepuesto);
 
-        var btnRegistrar = CrearBoton("Registrar orden", 20, 260, 170);
+        // Plantilla (Prototype): agregado minimo en el espacio libre de la fila del checkbox
+        cmbPlantilla.SetBounds(345, 212, 160, 30);
+        cmbPlantilla.DropDownStyle = ComboBoxStyle.DropDownList;
+        cmbPlantilla.Items.AddRange(new object[] { "Ninguna", "DIAGNOSTICO", "MANTENIMIENTO" });
+        cmbPlantilla.SelectedIndex = 0;
+        Controls.Add(cmbPlantilla);
+
+        var btnCargarPlantilla = CrearBoton("Cargar plantilla", 515, 210, 140);
+        btnCargarPlantilla.Click += (_, _) => CargarPlantilla();
+
+        txtTareasPlantilla.SetBounds(665, 212, 325, 30);
+        Controls.Add(txtTareasPlantilla);
+
+        var btnRegistrar = CrearBoton("Registrar orden", 20, 260, 180);
         btnRegistrar.Click += (_, _) => Registrar();
 
-        var btnFinalizar = CrearBoton("Finalizar seleccionada", 200, 260, 190);
+        var btnFinalizar = CrearBoton("Finalizar seleccionada", 215, 260, 205);
         btnFinalizar.Click += (_, _) => CambiarEstado("FINALIZADA");
 
-        var btnCancelar = CrearBoton("Cancelar seleccionada", 400, 260, 190);
+        var btnCancelar = CrearBoton("Cancelar seleccionada", 435, 260, 200);
         btnCancelar.Click += (_, _) => CambiarEstado("CANCELADA");
 
-        var btnPlantilla = CrearBoton("Cargar Plantilla Prototype", 600, 260, 220);
-        btnPlantilla.Click += (_, _) => CargarYModificarPlantilla();
-
-        var btnLimpiar = CrearBoton("Limpiar", 830, 260, 160);
+        var btnLimpiar = CrearBoton("Limpiar", 650, 260, 130);
         btnLimpiar.Click += (_, _) => Limpiar();
 
         tabla.SetBounds(20, 310, 970, 230);
@@ -101,7 +114,7 @@ public class FrmReparaciones : Form
         tabla.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         Controls.Add(tabla);
 
-        AgregarEtiqueta("Bitácora de Eventos (Singleton - Referencias Únicas)", 20, 550);
+        AgregarEtiqueta("Eventos y notificaciones simuladas (sin correo ni SMS reales)", 20, 550);
         txtEventos.SetBounds(20, 576, 970, 95);
         txtEventos.Multiline = true;
         txtEventos.ReadOnly = true;
@@ -114,6 +127,12 @@ public class FrmReparaciones : Form
     {
         try
         {
+            var tareas = string.IsNullOrWhiteSpace(txtTareasPlantilla.Text)
+                ? new List<string>()
+                : txtTareasPlantilla.Text
+                    .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .ToList();
+
             var dto = new CrearOrdenDto(
                 txtCliente.Text.Trim(),
                 cmbEquipo.Text,
@@ -121,12 +140,21 @@ public class FrmReparaciones : Form
                 cmbServicio.Text,
                 cmbPlan.Text,
                 cmbNotificacion.Text,
-                chkRepuesto.Checked
+                chkRepuesto.Checked,
+                tareas,
+                _plantillaCargada
             );
 
-            _registrarUseCase.Ejecutar(dto);
+            int eventosPrevios = _bitacora.ObtenerEventos().Count();
+            var resultado = _registrarUseCase.Ejecutar(dto);
             ActualizarTabla();
             ActualizarBitacoraView();
+
+            var avisos = _bitacora.ObtenerEventos().Skip(eventosPrevios);
+            MessageBox.Show(
+                $"Orden {resultado.Id} registrada.\nTotal: {resultado.Total:0.00}\nGarantía: {resultado.GarantiaDias} días\n\n{string.Join("\n", avisos)}",
+                "Orden registrada", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
             Limpiar();
         }
         catch (Exception ex)
@@ -155,22 +183,36 @@ public class FrmReparaciones : Form
         }
     }
 
-    private void CargarYModificarPlantilla()
+    private void CargarPlantilla()
     {
-        // Demostración del Patrón Prototype
-        var plantillaBase = new PlantillaReparacion("DIAGNOSTICO", new List<string> { "Revisión RAM", "Test de Disco" });
-        _plantillaActual = (PlantillaReparacion)plantillaBase.Clonar();
-        _plantillaActual.Tareas.Add("Limpieza de ventiladores (Tarea extra copia)");
+        if (cmbPlantilla.SelectedIndex <= 0)
+        {
+            txtTareasPlantilla.Clear();
+            _plantillaCargada = null;
+            return;
+        }
 
-        txtFalla.Text = $"Plantilla: {_plantillaActual.NombreServicio} | Tareas: {string.Join(", ", _plantillaActual.Tareas)}";
-        _bitacora.RegistrarEvento("Plantilla clonada y personalizada sin modificar la original (Prototype).");
-        ActualizarBitacoraView();
+        try
+        {
+            var plantilla = _obtenerPlantillaUseCase.Ejecutar(cmbPlantilla.Text);
+            cmbServicio.Text = plantilla.Servicio;
+            txtTareasPlantilla.Text = string.Join("; ", plantilla.Tareas);
+            _plantillaCargada = plantilla.Servicio;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Plantilla", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
 
     private void ActualizarTabla()
     {
         tabla.DataSource = null;
         tabla.DataSource = _listarUseCase.Ejecutar().ToList();
+        if (tabla.Columns["GarantiaDias"] != null)
+            tabla.Columns["GarantiaDias"].HeaderText = "Garantía (días)";
+        if (tabla.Columns["Total"] != null)
+            tabla.Columns["Total"].DefaultCellStyle.Format = "0.00";
     }
 
     private void ActualizarBitacoraView()
@@ -181,5 +223,15 @@ public class FrmReparaciones : Form
     private void AgregarEtiqueta(string texto, int x, int y) => Controls.Add(new Label { Text = texto, Left = x, Top = y, Width = 320, Height = 24 });
     private void PrepararCombo(ComboBox c, int x, int y, params string[] opciones) { c.SetBounds(x, y, 300, 32); c.DropDownStyle = ComboBoxStyle.DropDownList; c.Items.AddRange(opciones); c.SelectedIndex = 0; Controls.Add(c); }
     private Button CrearBoton(string texto, int x, int y, int ancho) { var btn = new Button { Text = texto, Left = x, Top = y, Width = ancho, Height = 35 }; Controls.Add(btn); return btn; }
-    private void Limpiar() { txtCliente.Clear(); txtFalla.Clear(); cmbEquipo.SelectedIndex = 0; cmbServicio.SelectedIndex = 0; cmbPlan.SelectedIndex = 0; cmbNotificacion.SelectedIndex = 0; chkRepuesto.Checked = false; txtCliente.Focus(); }
+    private void Limpiar()
+    {
+        txtCliente.Clear(); txtFalla.Clear();
+        cmbEquipo.SelectedIndex = 0; cmbServicio.SelectedIndex = 0;
+        cmbPlan.SelectedIndex = 0; cmbNotificacion.SelectedIndex = 0;
+        chkRepuesto.Checked = false;
+        cmbPlantilla.SelectedIndex = 0;
+        txtTareasPlantilla.Clear();
+        _plantillaCargada = null;
+        txtCliente.Focus();
+    }
 }

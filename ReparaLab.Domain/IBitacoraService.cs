@@ -1,4 +1,4 @@
-namespace ReparaLab.Application.Interfaces;
+namespace ReparaLab.Domain;
 
 public interface IBitacoraService
 {

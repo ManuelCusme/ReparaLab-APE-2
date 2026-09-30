@@ -1,4 +1,4 @@
-namespace ReparaLab.Application.FactoryMethod;
+namespace ReparaLab.Domain.Notificaciones;
 
 public interface INotificador
 {
