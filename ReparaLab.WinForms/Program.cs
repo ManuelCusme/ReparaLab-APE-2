@@ -5,6 +5,7 @@ using ReparaLab.Application.FactoryMethod;
 using ReparaLab.Application.UseCases;
 using ReparaLab.Domain;
 using ReparaLab.Domain.AbstractFactory;
+using ReparaLab.Domain.Builder;
 using ReparaLab.Domain.Prototype;
 using ReparaLab.Domain.Repositories;
 using ReparaLab.Infrastructure.Notificaciones;
@@ -35,6 +36,7 @@ internal static class Program
         services.AddSingleton<IBitacoraService>(BitacoraSingleton.Instancia);
         services.AddSingleton<CatalogoPlantillas>();
         services.AddSingleton<PlanFactorySelector>();
+        services.AddTransient<IOrdenReparacionBuilderFactory, OrdenReparacionBuilderFactory>();
         services.AddSingleton<INotificadorFactorySelector, NotificadorFactorySelector>();
 
         // Casos de Uso

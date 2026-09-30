@@ -7,6 +7,7 @@ using ReparaLab.Application.FactoryMethod;
 using ReparaLab.Application.UseCases;
 using ReparaLab.Domain;
 using ReparaLab.Domain.AbstractFactory;
+using ReparaLab.Domain.Builder;
 using ReparaLab.Domain.Prototype;
 using ReparaLab.Domain.Repositories;
 using ReparaLab.Infrastructure.Notificaciones;
@@ -17,7 +18,7 @@ using Xunit;
 public class PruebasReparaLab
 {
     private static RegistrarOrdenUseCase CrearRegistrarUseCase(OrdenMemoryRepository repo, IBitacoraService bitacora) =>
-        new RegistrarOrdenUseCase(repo, new PlanFactorySelector(), new NotificadorFactorySelector(), bitacora);
+        new RegistrarOrdenUseCase(repo, new PlanFactorySelector(), new OrdenReparacionBuilderFactory(), new NotificadorFactorySelector(), bitacora);
 
     private static string ObtenerRutaProyecto(string carpetaProyecto, string archivoCsproj, [CallerFilePath] string archivoPrueba = "")
     {

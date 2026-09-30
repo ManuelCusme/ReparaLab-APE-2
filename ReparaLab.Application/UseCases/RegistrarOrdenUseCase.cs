@@ -12,17 +12,20 @@ public class RegistrarOrdenUseCase
 {
     private readonly IOrdenEscrituraRepository _escritura;
     private readonly PlanFactorySelector _planFactorySelector;
+    private readonly IOrdenReparacionBuilderFactory _builderFactory;
     private readonly INotificadorFactorySelector _notificadorFactorySelector;
     private readonly IBitacoraService _bitacora;
 
     public RegistrarOrdenUseCase(
         IOrdenEscrituraRepository escritura,
         PlanFactorySelector planFactorySelector,
+        IOrdenReparacionBuilderFactory builderFactory,
         INotificadorFactorySelector notificadorFactorySelector,
         IBitacoraService bitacora)
     {
         _escritura = escritura;
         _planFactorySelector = planFactorySelector;
+        _builderFactory = builderFactory;
         _notificadorFactorySelector = notificadorFactorySelector;
         _bitacora = bitacora;
     }
@@ -55,7 +58,7 @@ public class RegistrarOrdenUseCase
         int siguienteId = _escritura.ObtenerSiguienteId();
 
         // 2. Builder - construccion de la orden
-        OrdenReparacion orden = new OrdenReparacionBuilder()
+        OrdenReparacion orden = _builderFactory.Crear()
             .ConId(siguienteId)
             .ConDatosCliente(dto.Cliente, dto.Equipo, dto.Falla)
             .ConServicioYPlan(dto.Servicio, dto.Plan)

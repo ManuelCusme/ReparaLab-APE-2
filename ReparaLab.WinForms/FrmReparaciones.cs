@@ -176,6 +176,9 @@ public class FrmReparaciones : Form
             _cambiarEstadoUseCase.Ejecutar(id, nuevoEstado);
             ActualizarTabla();
             ActualizarBitacoraView();
+            MessageBox.Show(
+                $"La orden {id} pasó a estado {nuevoEstado}.",
+                "Estado actualizado", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
