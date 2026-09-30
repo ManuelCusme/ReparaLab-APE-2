@@ -8,3 +8,10 @@ bin/
 # Build results
 [Dd]ebug/
 [Rr]elease/
+
+# Proyecto original descargado (fuera de la solución, no se versiona)
+JV_ReparaLab_Codigo_Base (1)/
+JV_ReparaLab_Codigo_Base (1).zip
+
+# Planes/artefactos de trabajo del agente (no forman parte del entregable)
+docs/superpowers/
