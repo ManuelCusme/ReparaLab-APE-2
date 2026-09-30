@@ -1,6 +1,6 @@
 ﻿namespace ReparaLab.Infrastructure.Singleton;
 
-using ReparaLab.Application.Interfaces;
+using ReparaLab.Domain;
 
 public sealed class BitacoraSingleton : IBitacoraService
 {
